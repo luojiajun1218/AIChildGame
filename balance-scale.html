@@ -1,0 +1,924 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>天平称重 - 互动教学</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: 'Nunito', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1200px;
+            width: 100%;
+        }
+
+        /* Header */
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            color: white;
+        }
+
+        .title {
+            font-size: clamp(1.8rem, 5vw, 2.5rem);
+            font-weight: 800;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            font-size: clamp(0.9rem, 2.5vw, 1.1rem);
+            opacity: 0.9;
+        }
+
+        /* Mode Selection */
+        .mode-selector {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .mode-btn {
+            padding: 12px 25px;
+            font-size: 1rem;
+            font-weight: 600;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: white;
+            color: #667eea;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+
+        .mode-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+        }
+
+        .mode-btn.active {
+            background: #ffd93d;
+            color: #7c4dff;
+            transform: scale(1.05);
+        }
+
+        /* Balance Scale */
+        .scale-container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px 20px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            position: relative;
+            min-height: 400px;
+        }
+
+        .scale-wrapper {
+            position: relative;
+            max-width: 700px;
+            margin: 0 auto;
+        }
+
+        /* Scale Base */
+        .scale-base {
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 120px;
+            height: 80px;
+            background: linear-gradient(135deg, #ffd93d 0%, #ff9800 100%);
+            border-radius: 10px 10px 0 0;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        }
+
+        .scale-pole {
+            position: absolute;
+            bottom: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 12px;
+            height: 200px;
+            background: linear-gradient(90deg, #ffc107 0%, #ff9800 100%);
+            border-radius: 6px;
+        }
+
+        /* Scale Beam */
+        .scale-beam-container {
+            position: absolute;
+            bottom: 270px;
+            left: 50%;
+            transform: translateX(-50%);
+            transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .scale-beam {
+            width: 500px;
+            height: 16px;
+            background: linear-gradient(90deg, #ffc107 0%, #ffd93d 50%, #ffc107 100%);
+            border-radius: 8px;
+            position: relative;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+        }
+
+        /* Pans */
+        .pan {
+            position: absolute;
+            bottom: -100px;
+            width: 120px;
+            height: 80px;
+            background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+            border: 4px solid #2196f3;
+            border-radius: 0 0 60px 60px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-end;
+            padding-bottom: 10px;
+            transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        }
+
+        .pan-left {
+            left: 20px;
+        }
+
+        .pan-right {
+            right: 20px;
+        }
+
+        /* Pan Ropes */
+        .pan-ropes {
+            position: absolute;
+            top: -100px;
+            width: 100%;
+            height: 100px;
+        }
+
+        .rope {
+            position: absolute;
+            width: 3px;
+            background: #7f8c8d;
+            top: 0;
+        }
+
+        .rope-left-1 { left: 30px; height: 100px; }
+        .rope-left-2 { right: 30px; height: 100px; }
+        .rope-right-1 { left: 30px; height: 100px; }
+        .rope-right-2 { right: 30px; height: 100px; }
+
+        /* Items on Pan */
+        .pan-items {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: flex-start;
+            gap: 5px;
+            max-width: 100px;
+            min-height: 50px;
+        }
+
+        .pan-item {
+            font-size: 2rem;
+            animation: dropIn 0.3s ease;
+        }
+
+        @keyframes dropIn {
+            from {
+                transform: translateY(-50px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        /* Weight Display */
+        .pan-weight {
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: #1976d2;
+            margin-top: 5px;
+            text-align: center;
+        }
+
+        /* Items Panel */
+        .items-panel {
+            background: white;
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+
+        .panel-title {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .items-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .item {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            border: 3px solid transparent;
+            border-radius: 15px;
+            padding: 15px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            user-select: none;
+        }
+
+        .item:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .item.selected {
+            border-color: #2196f3;
+            background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+        }
+
+        .item-icon {
+            font-size: 2.5rem;
+            margin-bottom: 8px;
+        }
+
+        .item-name {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .item-weight {
+            font-size: 0.75rem;
+            color: #666;
+            font-weight: 600;
+        }
+
+        /* Control Buttons */
+        .controls {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .control-btn {
+            padding: 12px 20px;
+            font-size: 1rem;
+            font-weight: 600;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .control-btn.primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .control-btn.secondary {
+            background: #f5f5f5;
+            color: #333;
+        }
+
+        .control-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        }
+
+        /* Teaching Panel */
+        .teaching-panel {
+            background: white;
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            margin-top: 20px;
+        }
+
+        .lesson-title {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: #667eea;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .lesson-icon {
+            font-size: 1.5rem;
+        }
+
+        .lesson-content {
+            font-size: 1rem;
+            color: #555;
+            line-height: 1.8;
+            margin-bottom: 15px;
+        }
+
+        .lesson-example {
+            background: #f5f7fa;
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+
+        .tip-box {
+            background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%);
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 15px;
+        }
+
+        .tip-title {
+            font-weight: 700;
+            color: #e65100;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* Practice Mode */
+        .practice-panel {
+            background: white;
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            margin-top: 20px;
+        }
+
+        .question-box {
+            background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .question {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #1565c0;
+            margin-bottom: 10px;
+        }
+
+        .hint {
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        .answer-options {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+        }
+
+        .answer-btn {
+            padding: 15px;
+            font-size: 1rem;
+            font-weight: 600;
+            border: 3px solid #e0e0e0;
+            border-radius: 10px;
+            background: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .answer-btn:hover {
+            border-color: #2196f3;
+            background: #e3f2fd;
+        }
+
+        .answer-btn.correct {
+            background: #4caf50;
+            color: white;
+            border-color: #4caf50;
+        }
+
+        .answer-btn.wrong {
+            background: #f44336;
+            color: white;
+            border-color: #f44336;
+        }
+
+        /* Score Display */
+        .score-display {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-top: 20px;
+        }
+
+        .score-item {
+            text-align: center;
+        }
+
+        .score-value {
+            font-size: 2rem;
+            font-weight: 800;
+            color: #667eea;
+        }
+
+        .score-label {
+            font-size: 0.85rem;
+            color: #666;
+        }
+
+        /* Success Animation */
+        .success-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+
+        .success-overlay.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .success-content {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            text-align: center;
+            transform: scale(0.8);
+            transition: transform 0.3s ease;
+        }
+
+        .success-overlay.active .success-content {
+            transform: scale(1);
+        }
+
+        .success-icon {
+            font-size: 4rem;
+            margin-bottom: 20px;
+        }
+
+        .success-text {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #4caf50;
+            margin-bottom: 20px;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .scale-beam {
+                width: 350px;
+            }
+
+            .pan {
+                width: 90px;
+                height: 60px;
+            }
+
+            .item {
+                padding: 10px;
+            }
+
+            .item-icon {
+                font-size: 2rem;
+            }
+        }
+
+        /* Instructions */
+        .instructions {
+            background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .instruction-step {
+            display: flex;
+            align-items: flex-start;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .step-number {
+            background: #4caf50;
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+
+        .step-text {
+            color: #2e7d32;
+            line-height: 1.6;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1 class="title">⚖️ 天平称重</h1>
+            <p class="subtitle">通过互动游戏学习重量的概念</p>
+        </div>
+
+        <!-- Mode Selection -->
+        <div class="mode-selector">
+            <button class="mode-btn active" data-mode="learn">📚 学习模式</button>
+            <button class="mode-btn" data-mode="practice">🎮 练习模式</button>
+        </div>
+
+        <!-- Balance Scale -->
+        <div class="scale-container">
+            <div class="scale-wrapper">
+                <div class="scale-beam-container" id="scaleBeam">
+                    <div class="scale-beam">
+                        <!-- Left Pan -->
+                        <div class="pan-ropes">
+                            <div class="rope rope-left-1"></div>
+                            <div class="rope rope-left-2"></div>
+                        </div>
+                        <div class="pan pan-left" id="panLeft">
+                            <div class="pan-items" id="panLeftItems"></div>
+                            <div class="pan-weight" id="panLeftWeight">0 克</div>
+                        </div>
+
+                        <!-- Right Pan -->
+                        <div class="pan-ropes" style="left: 380px;">
+                            <div class="rope rope-right-1"></div>
+                            <div class="rope rope-right-2"></div>
+                        </div>
+                        <div class="pan pan-right" id="panRight">
+                            <div class="pan-items" id="panRightItems"></div>
+                            <div class="pan-weight" id="panRightWeight">0 克</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="scale-pole"></div>
+                <div class="scale-base"></div>
+            </div>
+        </div>
+
+        <!-- Learning Mode Content -->
+        <div id="learnMode">
+            <div class="items-panel">
+                <div class="panel-title">🎯 选择物品放到天平上</div>
+                <div class="items-grid" id="itemsGrid"></div>
+                <div class="controls">
+                    <button class="control-btn primary" onclick="addToLeftPan()">⬅️ 放左边</button>
+                    <button class="control-btn secondary" onclick="clearPans()">🗑️ 清空天平</button>
+                    <button class="control-btn primary" onclick="addToRightPan()">➡️ 放右边</button>
+                </div>
+            </div>
+
+            <div class="teaching-panel">
+                <div class="lesson-title">
+                    <span class="lesson-icon">📖</span>
+                    什么是天平？
+                </div>
+                <div class="lesson-content">
+                    天平是用来比较物品重量的工具。当天平平衡时，两边的重量相等。
+                    当一边下沉时，说明那边更重。
+                </div>
+
+                <div class="lesson-example">
+                    <strong>💡 观察：</strong>
+                    <ul style="margin-top: 10px; margin-left: 20px;">
+                        <li>当左边下沉 → 左边更重</li>
+                        <li>当右边下沉 → 右边更重</li>
+                        <li>当天平平衡 → 两边一样重</li>
+                    </ul>
+                </div>
+
+                <div class="tip-box">
+                    <div class="tip-title">💡 小知识</div>
+                    <div>比较重量时，我们可以用数字来表示重量。数字越大，物品越重哦！</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Practice Mode Content -->
+        <div id="practiceMode" style="display: none;">
+            <div class="practice-panel">
+                <div class="question-box">
+                    <div class="question" id="questionText">问题将在这里显示...</div>
+                    <div class="hint" id="questionHint">提示：观察天平的倾斜方向</div>
+                </div>
+                <div class="answer-options" id="answerOptions"></div>
+                <div class="score-display">
+                    <div class="score-item">
+                        <div class="score-value" id="correctCount">0</div>
+                        <div class="score-label">答对</div>
+                    </div>
+                    <div class="score-item">
+                        <div class="score-value" id="totalCount">0</div>
+                        <div class="score-label">总题数</div>
+                    </div>
+                </div>
+                <div class="controls" style="margin-top: 20px;">
+                    <button class="control-btn primary" onclick="nextQuestion()">下一题 ➡️</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Success Overlay -->
+    <div class="success-overlay" id="successOverlay">
+        <div class="success-content">
+            <div class="success-icon">🎉</div>
+            <div class="success-text">太棒了！答对了！</div>
+            <button class="control-btn primary" onclick="closeSuccess()">继续</button>
+        </div>
+    </div>
+
+    <script>
+        // Game State
+        let selectedItem = null;
+        let leftPanWeight = 0;
+        let rightPanWeight = 0;
+        let leftPanItems = [];
+        let rightPanItems = [];
+        let currentMode = 'learn';
+
+        // Practice Mode State
+        let correctCount = 0;
+        let totalCount = 0;
+        let currentQuestion = null;
+
+        // Available Items
+        const items = [
+            { id: 1, name: '苹果', icon: '🍎', weight: 100 },
+            { id: 2, name: '橘子', icon: '🍊', weight: 80 },
+            { id: 3, name: '香蕉', icon: '🍌', weight: 120 },
+            { id: 4, name: '葡萄', icon: '🍇', weight: 50 },
+            { id: 5, name: '西瓜', icon: '🍉', weight: 300 },
+            { id: 6, name: '草莓', icon: '🍓', weight: 20 },
+            { id: 7, name: '桃子', icon: '🍑', weight: 150 },
+            { id: 8, name: '菠萝', icon: '🍍', weight: 200 },
+            { id: 9, name: '樱桃', icon: '🍒', weight: 10 },
+            { id: 10, name: '梨子', icon: '🍐', weight: 180 },
+        ];
+
+        // Practice Questions
+        const questions = [
+            {
+                left: [{ id: 1, weight: 100 }],
+                right: [{ id: 2, weight: 80 }],
+                question: '哪边更重？',
+                options: ['左边更重', '右边更重', '一样重'],
+                correct: 0
+            },
+            {
+                left: [{ id: 4, weight: 50 }, { id: 6, weight: 20 }],
+                right: [{ id: 1, weight: 100 }],
+                question: '哪边更重？',
+                options: ['左边更重', '右边更重', '一样重'],
+                correct: 1
+            },
+            {
+                left: [{ id: 2, weight: 80 }, { id: 4, weight: 50 }],
+                right: [{ id: 6, weight: 20 }, { id: 9, weight: 10 }, { id: 4, weight: 50 }],
+                question: '哪边更重？',
+                options: ['左边更重', '右边更重', '一样重'],
+                correct: 2
+            },
+            {
+                left: [{ id: 3, weight: 120 }],
+                right: [{ id: 7, weight: 150 }],
+                question: '要让天平平衡，应该在哪边加重物？',
+                options: ['左边', '右边', '已经平衡'],
+                correct: 0
+            },
+            {
+                left: [{ id: 5, weight: 300 }],
+                right: [{ id: 8, weight: 200 }, { id: 10, weight: 180 }],
+                question: '哪边更重？',
+                options: ['左边更重', '右边更重', '一样重'],
+                correct: 1
+            }
+        ];
+
+        // Initialize
+        function init() {
+            renderItems();
+            setupModeButtons();
+            loadQuestion();
+        }
+
+        // Render Items
+        function renderItems() {
+            const grid = document.getElementById('itemsGrid');
+            grid.innerHTML = items.map(item => `
+                <div class="item" data-id="${item.id}" onclick="selectItem(${item.id})">
+                    <div class="item-icon">${item.icon}</div>
+                    <div class="item-name">${item.name}</div>
+                    <div class="item-weight">${item.weight} 克</div>
+                </div>
+            `).join('');
+        }
+
+        // Select Item
+        function selectItem(id) {
+            document.querySelectorAll('.item').forEach(el => el.classList.remove('selected'));
+            selectedItem = items.find(item => item.id === id);
+            document.querySelector(`.item[data-id="${id}"]`).classList.add('selected');
+        }
+
+        // Add to Left Pan
+        function addToLeftPan() {
+            if (!selectedItem) {
+                alert('请先选择一个物品！');
+                return;
+            }
+            leftPanWeight += selectedItem.weight;
+            leftPanItems.push(selectedItem);
+            updatePanDisplay();
+        }
+
+        // Add to Right Pan
+        function addToRightPan() {
+            if (!selectedItem) {
+                alert('请先选择一个物品！');
+                return;
+            }
+            rightPanWeight += selectedItem.weight;
+            rightPanItems.push(selectedItem);
+            updatePanDisplay();
+        }
+
+        // Clear Pans
+        function clearPans() {
+            leftPanWeight = 0;
+            rightPanWeight = 0;
+            leftPanItems = [];
+            rightPanItems = [];
+            updatePanDisplay();
+        }
+
+        // Update Pan Display
+        function updatePanDisplay() {
+            // Update left pan
+            const leftItemsEl = document.getElementById('panLeftItems');
+            leftItemsEl.innerHTML = leftPanItems.map(item =>
+                `<div class="pan-item">${item.icon}</div>`
+            ).join('');
+            document.getElementById('panLeftWeight').textContent = leftPanWeight + ' 克';
+
+            // Update right pan
+            const rightItemsEl = document.getElementById('panRightItems');
+            rightItemsEl.innerHTML = rightPanItems.map(item =>
+                `<div class="pan-item">${item.icon}</div>`
+            ).join('');
+            document.getElementById('panRightWeight').textContent = rightPanWeight + ' 克';
+
+            // Update beam rotation
+            updateBeamRotation();
+        }
+
+        // Update Beam Rotation
+        function updateBeamRotation() {
+            const beam = document.getElementById('scaleBeam');
+            const difference = rightPanWeight - leftPanWeight;
+            const maxRotation = 15;
+            const rotation = Math.max(-maxRotation, Math.min(maxRotation, difference / 20));
+            beam.style.transform = `translateX(-50%) rotate(${rotation}deg)`;
+        }
+
+        // Setup Mode Buttons
+        function setupModeButtons() {
+            document.querySelectorAll('.mode-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    currentMode = btn.dataset.mode;
+
+                    document.getElementById('learnMode').style.display = currentMode === 'learn' ? 'block' : 'none';
+                    document.getElementById('practiceMode').style.display = currentMode === 'practice' ? 'block' : 'none';
+
+                    if (currentMode === 'practice') {
+                        clearPans();
+                        loadQuestion();
+                    }
+                });
+            });
+        }
+
+        // Load Question
+        function loadQuestion() {
+            currentQuestion = questions[Math.floor(Math.random() * questions.length)];
+
+            // Clear pans
+            leftPanWeight = 0;
+            rightPanWeight = 0;
+            leftPanItems = [];
+            rightPanItems = [];
+
+            // Add items to pans
+            currentQuestion.left.forEach(item => {
+                const fullItem = items.find(i => i.id === item.id);
+                leftPanWeight += fullItem.weight;
+                leftPanItems.push(fullItem);
+            });
+
+            currentQuestion.right.forEach(item => {
+                const fullItem = items.find(i => i.id === item.id);
+                rightPanWeight += fullItem.weight;
+                rightPanItems.push(fullItem);
+            });
+
+            updatePanDisplay();
+
+            // Display question
+            document.getElementById('questionText').textContent = currentQuestion.question;
+
+            // Display options
+            const optionsEl = document.getElementById('answerOptions');
+            optionsEl.innerHTML = currentQuestion.options.map((option, index) => `
+                <button class="answer-btn" onclick="checkAnswer(${index})">${option}</button>
+            `).join('');
+        }
+
+        // Check Answer
+        function checkAnswer(selectedIndex) {
+            const buttons = document.querySelectorAll('.answer-btn');
+            totalCount++;
+            document.getElementById('totalCount').textContent = totalCount;
+
+            if (selectedIndex === currentQuestion.correct) {
+                correctCount++;
+                document.getElementById('correctCount').textContent = correctCount;
+                buttons[selectedIndex].classList.add('correct');
+                showSuccess();
+            } else {
+                buttons[selectedIndex].classList.add('wrong');
+                buttons[currentQuestion.correct].classList.add('correct');
+            }
+
+            // Disable all buttons
+            buttons.forEach(btn => btn.disabled = true);
+        }
+
+        // Show Success
+        function showSuccess() {
+            document.getElementById('successOverlay').classList.add('active');
+        }
+
+        // Close Success
+        function closeSuccess() {
+            document.getElementById('successOverlay').classList.remove('active');
+            nextQuestion();
+        }
+
+        // Next Question
+        function nextQuestion() {
+            loadQuestion();
+        }
+
+        // Initialize on load
+        init();
+    </script>
+</body>
+</html>
