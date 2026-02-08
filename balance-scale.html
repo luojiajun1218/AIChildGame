@@ -86,23 +86,24 @@
         .scale-container {
             background: white;
             border-radius: 20px;
-            padding: 40px 20px;
+            padding: 20px;
             margin-bottom: 30px;
             box-shadow: 0 10px 40px rgba(0,0,0,0.2);
             position: relative;
-            min-height: 400px;
+            min-height: 500px;
         }
 
         .scale-wrapper {
             position: relative;
             max-width: 700px;
             margin: 0 auto;
+            height: 450px;
         }
 
         /* Scale Base */
         .scale-base {
             position: absolute;
-            bottom: 0;
+            bottom: 20px;
             left: 50%;
             transform: translateX(-50%);
             width: 120px;
@@ -114,7 +115,7 @@
 
         .scale-pole {
             position: absolute;
-            bottom: 80px;
+            bottom: 100px;
             left: 50%;
             transform: translateX(-50%);
             width: 12px;
@@ -126,7 +127,7 @@
         /* Scale Beam */
         .scale-beam-container {
             position: absolute;
-            bottom: 270px;
+            bottom: 300px;
             left: 50%;
             transform: translateX(-50%);
             transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
